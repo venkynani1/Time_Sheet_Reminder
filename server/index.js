@@ -11,25 +11,45 @@ const { startScheduler } = require('./services/schedulerService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const allowedOrigins = ['http://localhost:5173', process.env.CLIENT_URL].filter(Boolean);
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://time-sheet-reminder.vercel.app',
+  process.env.CLIENT_URL,
+].filter(Boolean);
 
-app.use(cors({
+const corsOptions = {
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    const error = new Error('Origin is not allowed by CORS.');
-    error.status = 403;
-    return callback(error);
+    if (!origin) return callback(null, true);
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app');
+
+    if (isAllowed) {
+      console.log('CORS accepted:', origin);
+      return callback(null, true);
+    }
+
+    console.warn('CORS rejected:', origin);
+    return callback(new Error(`CORS origin not allowed: ${origin}`));
   },
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 app.use(express.json());
 app.get('/api/health', health);
 app.get('/api/healthChecks', health);
+app.get('/api/cors-debug', (req, res) => res.json({ clientUrl: process.env.CLIENT_URL, allowedOrigins }));
 app.use('/api/members', memberRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/timesheet', timesheetRoutes);
 app.use((err, req, res, next) => {
-  if (err.status !== 403) console.error(err);
-  res.status(err.status || 500).json({ error: err.message || 'An unexpected server error occurred.' });
+  console.error(err);
+  res.status(500).json({ error: err.message || 'An unexpected server error occurred.' });
 });
 
 if (require.main === module) {
