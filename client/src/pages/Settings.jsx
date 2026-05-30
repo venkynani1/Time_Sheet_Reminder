@@ -1,4 +1,4 @@
-// Provides channel details, manual SMTP testing, and editable email templates.
+// Provides channel details, manual Gmail API testing, and editable email templates.
 import { useEffect, useState } from 'react';
 import PageHeader from '../components/PageHeader';
 import { getEmailTemplate, getSettings, sendTestEmail, updateEmailTemplate } from '../services/api';
@@ -38,7 +38,7 @@ function Settings() {
   return <>
     <PageHeader eyebrow="Configuration" title="Settings" description="Channels are configured through server environment variables so secrets stay off the client." />
     <div className="row g-4">
-      {[['Email via SMTP', settings?.emailEnabled, 'Primary free provider. Configure EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, and EMAIL_FROM.'], ['Telegram Bot', settings?.telegramEnabled, 'Optional free channel. Enable it only after setting a bot token and member chat IDs.'], ['Twilio SMS', settings?.twilioEnabled, 'Optional future provider. It is disabled by default and not used by the reminder workflow.']].map(([title, enabled, text]) => <div className="col-md-4" key={title}><div className="card content-card h-100"><div className="card-body p-4"><div className="d-flex justify-content-between"><h2 className="h5">{title}</h2><span className={`badge text-bg-${enabled ? 'success' : 'secondary'}`}>{enabled ? 'Enabled' : 'Disabled'}</span></div><p className="text-secondary mb-0">{text}</p></div></div></div>)}
+      {[['Email via Gmail API', settings?.emailEnabled, 'Primary HTTPS provider. Configure Google OAuth2 credentials and the Gmail sender address.'], ['Telegram Bot', settings?.telegramEnabled, 'Optional free channel. Enable it only after setting a bot token and member chat IDs.'], ['Twilio SMS', settings?.twilioEnabled, 'Optional future provider. It is disabled by default and not used by the reminder workflow.']].map(([title, enabled, text]) => <div className="col-md-4" key={title}><div className="card content-card h-100"><div className="card-body p-4"><div className="d-flex justify-content-between"><h2 className="h5">{title}</h2><span className={`badge text-bg-${enabled ? 'success' : 'secondary'}`}>{enabled ? 'Enabled' : 'Disabled'}</span></div><p className="text-secondary mb-0">{text}</p></div></div></div>)}
     </div>
 
     <div className="card content-card mt-4"><div className="card-body p-4">
@@ -58,7 +58,7 @@ function Settings() {
       <div className="border rounded p-3 bg-light"><strong>{preview.subject}</strong><div className="mt-3 template-preview">{preview.body}</div></div>
     </div></div>
 
-    <div className="card content-card mt-4"><div className="card-body p-4"><h2 className="h5">Send Test Email</h2><p className="text-secondary">Use this manual check after updating SMTP credentials in <code>server/.env</code>.</p>{notice && <div className={`alert alert-${notice.type}`}>{notice.text}</div>}<form className="d-flex flex-wrap gap-2" onSubmit={testEmail}><input className="form-control flex-grow-1" onChange={(event) => setEmail(event.target.value)} placeholder="recipient@example.com" type="email" value={email} /><button className="btn btn-primary" disabled={sending} type="submit">{sending ? 'Sending...' : 'Send Test Email'}</button></form></div></div>
+    <div className="card content-card mt-4"><div className="card-body p-4"><h2 className="h5">Send Test Email</h2><p className="text-secondary">Use this manual check after adding Gmail API OAuth2 credentials to <code>server/.env</code> or Render.</p>{notice && <div className={`alert alert-${notice.type}`}>{notice.text}</div>}<form className="d-flex flex-wrap gap-2" onSubmit={testEmail}><input className="form-control flex-grow-1" onChange={(event) => setEmail(event.target.value)} placeholder="recipient@example.com" type="email" value={email} /><button className="btn btn-primary" disabled={sending} type="submit">{sending ? 'Sending...' : 'Send Test Email'}</button></form></div></div>
     <div className="card content-card mt-4"><div className="card-body p-4"><h2 className="h5">Scheduler timezone</h2><p className="mb-0">All automatic reminder jobs run in <strong>{settings?.timezone || 'Asia/Kolkata'}</strong>.</p></div></div>
   </>;
 }

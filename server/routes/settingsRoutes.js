@@ -1,4 +1,4 @@
-// Maps health and manual SMTP test endpoints to their controller functions.
+// Maps health and manual Gmail API test endpoints to their controller functions.
 const router = require('express').Router();
 const controller = require('../controllers/settingsController');
 router.get('/health', controller.health);

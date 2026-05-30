@@ -1,13 +1,13 @@
-// Handles operational health checks and manually triggered SMTP test emails.
+// Handles operational health checks and manually triggered Gmail API test emails.
 const { getDatabase } = require('../services/dataService');
-const emailService = require('../services/emailService');
+const gmailApiEmailService = require('../services/gmailApiEmailService');
 const { getSchedulerStatus } = require('../services/schedulerService');
 const templateService = require('../services/templateService');
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function health(req, res) {
-  const missingConfiguration = emailService.getMissingConfiguration();
+  const missingVars = gmailApiEmailService.getMissingConfiguration();
   let storageAccessible = true;
   let storageError = null;
   try {
@@ -20,7 +20,9 @@ async function health(req, res) {
   const healthy = storageAccessible && scheduler.running;
   res.status(healthy ? 200 : 503).json({
     status: healthy ? 'ok' : 'degraded',
-    smtp: { configured: missingConfiguration.length === 0, missingConfiguration },
+    emailProvider: 'gmail-api',
+    configured: missingVars.length === 0,
+    missingVars,
     scheduler,
     storage: { accessible: storageAccessible, error: storageError },
   });
@@ -29,15 +31,20 @@ async function health(req, res) {
 async function sendTestEmail(req, res) {
   const { email } = req.body;
   if (!emailPattern.test(email || '')) return res.status(400).json({ error: 'Enter a valid test email address.' });
-  const missingConfiguration = emailService.getMissingConfiguration();
-  if (missingConfiguration.length) {
-    return res.status(400).json({ error: `Update ${missingConfiguration.join(', ')} in server/.env before sending a test email.` });
+  const missingVars = gmailApiEmailService.getMissingConfiguration();
+  if (missingVars.length) {
+    return res.status(400).json({ error: `Update ${missingVars.join(', ')} before sending a test email.` });
   }
   try {
-    await emailService.sendTestEmail(email);
+    await gmailApiEmailService.sendEmail({
+      to: email,
+      subject: 'Weekly Timesheet Reminder System test email',
+      text: 'Your Gmail API settings are working. This is a manual test email from the Weekly Timesheet Reminder System.',
+      html: '<p>Your Gmail API settings are working. This is a manual test email from the Weekly Timesheet Reminder System.</p>',
+    });
     res.json({ message: `Test email sent to ${email}.` });
   } catch (error) {
-    res.status(502).json({ error: `SMTP test failed: ${error.message}` });
+    res.status(502).json({ error: `Gmail API test failed: ${error.message}` });
   }
 }
 async function getEmailTemplate(req, res, next) { try { const template = await templateService.getTemplate(); res.json({ template, preview: templateService.previewTemplate(template) }); } catch (error) { next(error); } }

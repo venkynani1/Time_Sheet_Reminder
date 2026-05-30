@@ -3,7 +3,7 @@
 
 This full-stack app helps a team collect weekly timesheets without paid SMS. It sends reminders only to saved active members who are still pending, records delivery attempts, and gives each member a unique confirmation link.
 
-The default provider is free SMTP email through Nodemailer. Telegram Bot reminders are optional. Twilio remains available as a future dependency but is disabled and unused by default.
+The default provider is Gmail API email over HTTPS. Telegram Bot reminders are optional. Twilio remains available as a future dependency but is disabled and unused by default.
 
 ## Safety
 
@@ -49,15 +49,18 @@ cd server
 Copy-Item .env.example .env
 ```
 
-## Free Email Setup
+## Gmail API Email Setup
 
-SMTP email is the primary provider. Many email services provide SMTP access. For Gmail:
+Gmail API over HTTPS is the primary email provider. This avoids SMTP ports `465` and `587`, which may time out on Render.
 
-1. Enable two-step verification for the sender account.
-2. Create a Gmail App Password.
-3. Set `EMAIL_HOST=smtp.gmail.com`, `EMAIL_PORT=587`, your address as `EMAIL_USER`, the app password as `EMAIL_PASS`, and the sender label or address as `EMAIL_FROM`.
+1. Create a Google Cloud project.
+2. Enable the Gmail API for that project.
+3. Configure the OAuth consent screen.
+4. Create an OAuth client ID and client secret.
+5. Generate a refresh token with Gmail send permission for the sender account.
+6. Add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`, and `GMAIL_SENDER_EMAIL` to `server/.env` locally and to Render environment variables in production.
 
-Do not commit `server/.env`.
+Do not commit `server/.env`. Do not print or log OAuth credentials.
 
 ## Optional Telegram Setup
 
@@ -81,6 +84,10 @@ EMAIL_USER=
 EMAIL_PASS=
 EMAIL_FROM=
 TIMEZONE=Asia/Kolkata
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REFRESH_TOKEN=
+GMAIL_SENDER_EMAIL=timesheetreminderr@gmail.com
 TELEGRAM_ENABLED=false
 TELEGRAM_BOT_TOKEN=
 TWILIO_ENABLED=false
@@ -91,15 +98,14 @@ TWILIO_PHONE_NUMBER=
 
 `TWILIO_ENABLED=false` is intentional. The current reminder workflow never sends SMS.
 
-After copying `.env.example` to `.env`, add the Gmail sender address and replace the local app-password marker before using email:
+The old SMTP variables remain optional for compatibility but are not used by default. Add Gmail API OAuth2 values before using email:
 
 ```dotenv
-EMAIL_USER=your-gmail-address@gmail.com
-EMAIL_PASS=MANUAL_UPDATE_REQUIRED_APP_PASSWORD
-EMAIL_FROM=your-gmail-address@gmail.com
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+GOOGLE_REFRESH_TOKEN=your_google_oauth_refresh_token
+GMAIL_SENDER_EMAIL=timesheetreminderr@gmail.com
 ```
-
-Paste the Gmail App Password into `EMAIL_PASS` locally. Never paste it into source code, logs, chat messages, screenshots, or commits.
 
 ## Run
 
@@ -135,14 +141,15 @@ Add these Render environment variables:
 PORT=5000
 CLIENT_URL=https://your-vercel-frontend.vercel.app
 APP_BASE_URL=https://your-vercel-frontend.vercel.app
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_gmail_app_password
-EMAIL_FROM=your_email@gmail.com
-TIMEZONE=Asia/Kolkata
-EMAIL_ENABLED=true
-```
+  TIMEZONE=Asia/Kolkata
+  EMAIL_ENABLED=true
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+GOOGLE_REFRESH_TOKEN=your_google_oauth_refresh_token
+  GMAIL_SENDER_EMAIL=timesheetreminderr@gmail.com
+  ```
+
+The old `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM` settings are optional legacy values. Gmail API sending does not use SMTP ports by default.
 
 `CLIENT_URL` controls browser CORS access. `APP_BASE_URL` controls confirmation links in reminder emails. Set both to the deployed Vercel URL without a trailing slash.
 
@@ -189,13 +196,14 @@ The page displays the member's name and asks whether the timesheet has been subm
 | `POST` | `/api/timesheet/mark-submitted/:memberId` | Admin mark-as-submitted action |
 | `GET` | `/api/timesheet/logs` | List reminder attempts |
 | `GET` | `/api/timesheet/settings` | Show non-secret channel settings |
-| `GET` | `/api/health` | Check SMTP configuration, scheduler state, and JSON storage access |
-| `POST` | `/api/settings/test-email` | Manually send one SMTP test email using `{ "email": "recipient@example.com" }` |
+| `GET` | `/api/health` | Check Gmail API configuration, scheduler state, and JSON storage access |
+| `GET` | `/api/healthChecks` | Render-friendly Gmail API, scheduler, and storage health check |
+| `POST` | `/api/settings/test-email` | Manually send one Gmail API test email using `{ "email": "recipient@example.com" }` |
 | `GET` | `/api/settings/email-template` | Get the saved email template and sample preview |
 | `PUT` | `/api/settings/email-template` | Save the common email template |
 | `POST` | `/api/members/import` | Import members from CSV content |
 
-The Settings page includes a **Send Test Email** form. It sends only when clicked and returns a clear validation message until the SMTP placeholders in `server/.env` are replaced.
+The Settings page includes a **Send Test Email** form. It sends only when clicked and returns a clear validation message until the Gmail API OAuth2 values are configured. Gmail API requests time out after 15 seconds.
 
 ## Editable Email Template
 

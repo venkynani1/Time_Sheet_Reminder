@@ -23,6 +23,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.get('/api/health', health);
+app.get('/api/healthChecks', health);
 app.use('/api/members', memberRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/timesheet', timesheetRoutes);

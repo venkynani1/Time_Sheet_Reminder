@@ -1,7 +1,7 @@
 // Owns weekly resets, confirmation state, and guarded reminder delivery.
 const { randomUUID } = require('crypto');
 const { getDatabase, updateDatabase } = require('./dataService');
-const emailService = require('./emailService');
+const gmailApiEmailService = require('./gmailApiEmailService');
 const templateService = require('./templateService');
 const telegramService = require('./telegramService');
 const { getCycleForDate, getWindowState } = require('./weekService');
@@ -71,7 +71,7 @@ async function sendReminders({ ignoreWindow = false, date = new Date() } = {}) {
   for (const item of pending) {
     const confirmationUrl = `${APP_URL}/confirm/${item.member.token}`;
     const content = templateService.renderTemplate(template, { name: item.member.name, confirmationLink: confirmationUrl, deadline: 'Monday 9:00 AM', weekRange: `${item.weekStartDate} to ${item.weekEndDate}` });
-    const channels = [{ name: 'EMAIL', enabled: process.env.EMAIL_ENABLED !== 'false', ready: true, send: () => emailService.sendReminder(item.member, content) }];
+    const channels = [{ name: 'EMAIL', enabled: process.env.EMAIL_ENABLED !== 'false', ready: true, send: () => gmailApiEmailService.sendEmail({ to: item.member.email, subject: content.subject, text: content.body, html: `<p>${content.body.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>` }) }];
     channels.push({ name: 'TELEGRAM', enabled: process.env.TELEGRAM_ENABLED === 'true', ready: Boolean(item.member.telegramChatId), send: () => telegramService.sendReminder(item.member, content.body, confirmationUrl) });
     const selectedChannels = channels.filter((entry) => entry.enabled && entry.ready);
     for (const channel of selectedChannels) {
