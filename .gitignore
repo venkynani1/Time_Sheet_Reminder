@@ -1,0 +1,12 @@
+# Keeps dependencies, secrets, and generated build output out of version control.
+node_modules/
+client/node_modules/
+server/node_modules/
+client/dist/
+dist/
+server/.env
+client/.env
+.env
+.vercel/
+.DS_Store
+*.log

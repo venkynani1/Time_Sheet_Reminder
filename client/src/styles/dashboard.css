@@ -1,0 +1,13 @@
+/* Defines the professional admin and confirmation-page appearance. */
+:root { color: #17213b; background: #f4f7fb; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { min-width: 320px; min-height: 100vh; margin: 0; background: #f4f7fb; }
+.app-navbar { background: linear-gradient(120deg, #122b55, #1c5792); box-shadow: 0 4px 18px rgba(18, 43, 85, .2); }
+.navbar-nav .nav-link { color: #d6e7f8; font-size: .92rem; }.navbar-nav .nav-link.active, .navbar-nav .nav-link:hover { color: #fff; }
+.section-kicker { margin-bottom: 5px; color: #3972ae; font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.content-card, .metric-card, .confirmation-card { border: 0; border-radius: 14px; box-shadow: 0 8px 24px rgba(29, 55, 95, .08); }
+.metric-card p { margin-bottom: 6px; color: #6c7890; font-size: .85rem; }.metric-card strong { color: #173c70; font-size: 1.8rem; }
+.safety-note { padding: 14px 18px; color: #684d08; background: #fff7d9; border: 1px solid #f0d98a; border-radius: 10px; }
+.table th { padding: 14px; color: #718096; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; }.table td { padding: 14px; }
+.confirmation-shell { display: grid; min-height: 100vh; padding: 20px; place-items: center; background: linear-gradient(140deg, #eef5fd, #f8fbff); }.confirmation-card { width: min(100%, 520px); }
+.template-preview { white-space: pre-wrap; }
+@media (max-width: 760px) { .navbar .container { align-items: flex-start; flex-direction: column; }.navbar-nav { flex-wrap: wrap; }.table { font-size: .85rem; } }

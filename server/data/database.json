@@ -1,0 +1,9 @@
+{
+  "members": [],
+  "weeklyStatuses": [],
+  "reminderLogs": [],
+  "emailTemplate": {
+    "subject": "Timesheet Submission Reminder",
+    "body": "Hi {{name}},\n\nPlease submit your timesheet before {{deadline}}.\n\nOnce submitted, please confirm here:\n{{confirmationLink}}\n\nThank you."
+  }
+}
