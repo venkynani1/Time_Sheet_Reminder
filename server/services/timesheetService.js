@@ -6,10 +6,13 @@ const templateService = require('./templateService');
 const telegramService = require('./telegramService');
 const { getCycleForDate, getWindowState } = require('./weekService');
 
-const APP_URL = process.env.APP_BASE_URL || 'http://localhost:5173';
-
 function buildStatus(memberId, cycle) {
   return { id: randomUUID(), ...cycle, memberId, status: 'PENDING', submittedAt: null, lastReminderSentAt: null, reminderCount: 0 };
+}
+
+function buildConfirmationLink(memberToken) {
+  if (!process.env.APP_BASE_URL) throw new Error('APP_BASE_URL must be configured with the public Vercel frontend URL.');
+  return `${process.env.APP_BASE_URL.replace(/\/$/, '')}/confirm/${memberToken}`;
 }
 
 async function resetWeek(date = new Date()) {
@@ -69,7 +72,8 @@ async function sendReminders({ ignoreWindow = false, date = new Date() } = {}) {
   const template = await templateService.getTemplate();
   const results = [];
   for (const item of pending) {
-    const confirmationUrl = `${APP_URL}/confirm/${item.member.token}`;
+    const confirmationUrl = buildConfirmationLink(item.member.token);
+    console.log('Confirmation link generated:', confirmationUrl);
     const content = templateService.renderTemplate(template, { name: item.member.name, confirmationLink: confirmationUrl, deadline: 'Monday 9:00 AM', weekRange: `${item.weekStartDate} to ${item.weekEndDate}` });
     const channels = [{ name: 'EMAIL', enabled: process.env.EMAIL_ENABLED !== 'false', ready: true, send: () => gmailApiEmailService.sendEmail({ to: item.member.email, subject: content.subject, text: content.body, html: `<p>${content.body.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>` }) }];
     channels.push({ name: 'TELEGRAM', enabled: process.env.TELEGRAM_ENABLED === 'true', ready: Boolean(item.member.telegramChatId), send: () => telegramService.sendReminder(item.member, content.body, confirmationUrl) });
@@ -97,4 +101,4 @@ async function getLogs() {
   return database.reminderLogs.map((log) => ({ ...log, member: database.members.find((member) => member.id === log.memberId) }));
 }
 
-module.exports = { addMemberToCurrentCycle, confirmByToken, getCurrentWeek, getLogs, markSubmitted, resetWeek, sendReminders };
+module.exports = { addMemberToCurrentCycle, buildConfirmationLink, confirmByToken, getCurrentWeek, getLogs, markSubmitted, resetWeek, sendReminders };

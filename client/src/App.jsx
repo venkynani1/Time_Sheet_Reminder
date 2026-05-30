@@ -8,6 +8,7 @@ import TeamMembers from './pages/TeamMembers';
 
 function App() {
   const path = window.location.pathname;
+  // This public route intentionally bypasses the admin layout and any future auth wrapper.
   const token = path.match(/^\/confirm\/([^/]+)$/)?.[1];
   if (token) return <ConfirmationPage token={token} />;
 

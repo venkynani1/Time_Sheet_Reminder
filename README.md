@@ -151,7 +151,7 @@ GOOGLE_REFRESH_TOKEN=your_google_oauth_refresh_token
 
 The old `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM` settings are optional legacy values. Gmail API sending does not use SMTP ports by default.
 
-`CLIENT_URL` controls browser CORS access. `APP_BASE_URL` controls confirmation links in reminder emails. Set both to the deployed Vercel URL without a trailing slash.
+`CLIENT_URL` controls browser CORS access. `APP_BASE_URL` controls confirmation links in reminder emails and **must be the deployed Vercel frontend URL**, never the Render backend URL. Set both to the deployed Vercel URL without a trailing slash.
 
 This starter uses `server/data/database.json`. Render's filesystem is ephemeral unless you attach persistent storage. Configure a persistent disk or migrate the JSON service to a managed database before relying on production history.
 
@@ -169,7 +169,7 @@ Add this Vercel environment variable:
 VITE_API_BASE_URL=https://your-render-backend.onrender.com
 ```
 
-The included `client/vercel.json` rewrite allows deployed confirmation URLs such as `/confirm/<memberToken>` to load the React app directly.
+The included `client/vercel.json` rewrite allows deployed confirmation URLs such as `/confirm/<memberToken>` to load the React app directly. This confirmation route is public and bypasses the admin layout; it does not require login or authentication.
 
 ## Confirmation Flow
 
