@@ -20,7 +20,7 @@ All scheduler jobs use the `Asia/Kolkata` timezone.
 | Monday `7:00 AM` to `9:00 AM` | Send every 30 minutes only to pending active members |
 | Monday `9:00 AM` onward | Stop reminders |
 
-Previous weekly statuses and reminder logs remain in `server/data/database.json`. A manual reset replaces only the current week's statuses.
+Previous weekly statuses and reminder logs remain in Supabase PostgreSQL. A manual reset replaces only the current week's statuses.
 
 ## Pages
 
@@ -77,6 +77,7 @@ Email continues to work when Telegram is disabled.
 PORT=5000
 CLIENT_URL=http://localhost:5173
 APP_BASE_URL=http://localhost:5173
+DATABASE_URL=postgresql://postgres:password@db.example.supabase.co:5432/postgres
 EMAIL_ENABLED=true
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -127,12 +128,25 @@ Open `http://localhost:5173`.
 
 ## Deployment
 
+### Supabase PostgreSQL
+
+1. Create a Supabase project.
+2. In the Supabase dashboard, open **Connect** and copy a PostgreSQL connection string.
+3. Set `DATABASE_URL` in `server/.env` for local development. Use the direct connection string for Prisma migrations. If your deployment requires Supabase's pooler, use its session-mode connection string.
+4. Run the migration locally when needed:
+
+```bash
+cd server
+npm run prisma:generate
+npm run prisma:migrate
+```
+
 ### Render Backend
 
 Create a Render Web Service from this GitHub repository:
 
 - Root directory: `server`
-- Build command: `npm install`
+- Build command: `npm install && npx prisma generate && npx prisma migrate deploy`
 - Start command: `npm start`
 
 Add these Render environment variables:
@@ -141,19 +155,20 @@ Add these Render environment variables:
 PORT=5000
 CLIENT_URL=https://your-vercel-frontend.vercel.app
 APP_BASE_URL=https://your-vercel-frontend.vercel.app
-  TIMEZONE=Asia/Kolkata
-  EMAIL_ENABLED=true
+DATABASE_URL=postgresql://postgres:password@db.example.supabase.co:5432/postgres
+TIMEZONE=Asia/Kolkata
+EMAIL_ENABLED=true
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
 GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
 GOOGLE_REFRESH_TOKEN=your_google_oauth_refresh_token
-  GMAIL_SENDER_EMAIL=timesheetreminderr@gmail.com
-  ```
+GMAIL_SENDER_EMAIL=timesheetreminderr@gmail.com
+```
 
 The old `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM` settings are optional legacy values. Gmail API sending does not use SMTP ports by default.
 
 `CLIENT_URL` controls browser CORS access. `APP_BASE_URL` controls confirmation links in reminder emails and **must be the deployed Vercel frontend URL**, never the Render backend URL. Set both to the deployed Vercel URL without a trailing slash.
 
-This starter uses `server/data/database.json`. Render's filesystem is ephemeral unless you attach persistent storage. Configure a persistent disk or migrate the JSON service to a managed database before relying on production history.
+The backend persists members, weekly statuses, reminder logs, and the editable email template in Supabase PostgreSQL. Render's ephemeral filesystem is not used for application data.
 
 ### Vercel Frontend
 
@@ -196,7 +211,7 @@ The page displays the member's name and asks whether the timesheet has been subm
 | `POST` | `/api/timesheet/mark-submitted/:memberId` | Admin mark-as-submitted action |
 | `GET` | `/api/timesheet/logs` | List reminder attempts |
 | `GET` | `/api/timesheet/settings` | Show non-secret channel settings |
-| `GET` | `/api/health` | Check Gmail API configuration, scheduler state, and JSON storage access |
+| `GET` | `/api/health` | Check Gmail API configuration, scheduler state, and PostgreSQL access |
 | `GET` | `/api/healthChecks` | Render-friendly Gmail API, scheduler, and storage health check |
 | `POST` | `/api/settings/test-email` | Manually send one Gmail API test email using `{ "email": "recipient@example.com" }` |
 | `GET` | `/api/settings/email-template` | Get the saved email template and sample preview |
@@ -246,7 +261,7 @@ client/src/
 |-- styles/
 server/
 |-- controllers/
-|-- data/
+|-- prisma/
 |-- routes/
 |-- services/
 |-- .env.example

@@ -1,5 +1,5 @@
 // Handles operational health checks and manually triggered Gmail API test emails.
-const { getDatabase } = require('../services/dataService');
+const { checkDatabaseConnection } = require('../services/dataService');
 const gmailApiEmailService = require('../services/gmailApiEmailService');
 const { getSchedulerStatus } = require('../services/schedulerService');
 const templateService = require('../services/templateService');
@@ -11,7 +11,7 @@ async function health(req, res) {
   let storageAccessible = true;
   let storageError = null;
   try {
-    await getDatabase();
+    await checkDatabaseConnection();
   } catch (error) {
     storageAccessible = false;
     storageError = error.message;

@@ -1,6 +1,5 @@
 // Manages saved team members and their stable confirmation tokens.
-const { randomUUID } = require('crypto');
-const { getDatabase, updateDatabase } = require('./dataService');
+const { prisma } = require('./dataService');
 const timesheetService = require('./timesheetService');
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -12,38 +11,33 @@ function validateMember(input) {
 }
 
 async function addMember(input) {
-  const database = await getDatabase();
-  if (database.members.some((member) => member.email.toLowerCase() === input.email.trim().toLowerCase())) throw new Error('A team member with this email already exists.');
-  const member = {
-    id: randomUUID(), name: input.name.trim(), email: input.email.trim(),
+  const email = input.email.trim();
+  if (await prisma.member.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } })) throw new Error('A team member with this email already exists.');
+  const member = await prisma.member.create({ data: {
+    name: input.name.trim(), email,
     mobile: input.mobile?.trim() || '', telegramChatId: input.telegramChatId?.trim() || '',
-    token: randomUUID(), active: input.active !== false,
-  };
-  await updateDatabase((database) => database.members.push(member));
+    active: input.active !== false,
+  } });
   await timesheetService.addMemberToCurrentCycle(member.id);
   return member;
 }
 
 async function updateMember(id, input) {
-  return updateDatabase((database) => {
-    const member = database.members.find((item) => item.id === id);
-    if (!member) return null;
-    if (database.members.some((item) => item.id !== id && item.email.toLowerCase() === input.email.trim().toLowerCase())) throw new Error('A team member with this email already exists.');
-    Object.assign(member, {
-      name: input.name.trim(), email: input.email.trim(), mobile: input.mobile?.trim() || '',
+  const email = input.email.trim();
+  const duplicate = await prisma.member.findFirst({ where: { id: { not: id }, email: { equals: email, mode: 'insensitive' } } });
+  if (duplicate) throw new Error('A team member with this email already exists.');
+  const result = await prisma.member.updateMany({
+    where: { id },
+    data: {
+      name: input.name.trim(), email, mobile: input.mobile?.trim() || '',
       telegramChatId: input.telegramChatId?.trim() || '', active: input.active !== false,
-    });
-    return member;
+    },
   });
+  return result.count ? prisma.member.findUnique({ where: { id } }) : null;
 }
 
 async function deleteMember(id) {
-  return updateDatabase((database) => {
-    const index = database.members.findIndex((member) => member.id === id);
-    if (index === -1) return false;
-    database.members.splice(index, 1);
-    return true;
-  });
+  return (await prisma.member.deleteMany({ where: { id } })).count > 0;
 }
 
 function parseCsvLine(line) {
@@ -71,8 +65,7 @@ async function importCsv(csv) {
     if (error) throw new Error(`${error} Check CSV row for ${row.email || row.name || 'unknown member'}.`);
     return row;
   });
-  const database = await getDatabase();
-  const knownEmails = new Set(database.members.map((member) => member.email.toLowerCase()));
+  const knownEmails = new Set((await prisma.member.findMany({ select: { email: true } })).map((member) => member.email.toLowerCase()));
   for (const row of rows) {
     const email = row.email.toLowerCase();
     if (knownEmails.has(email)) throw new Error(`Duplicate email is not allowed: ${row.email}.`);

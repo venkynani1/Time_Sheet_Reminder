@@ -1,5 +1,6 @@
 // Persists, validates, previews, and renders the shared reminder email template.
-const { getDatabase, updateDatabase } = require('./dataService');
+const { prisma } = require('./dataService');
+const TEMPLATE_ID = 'default';
 
 const defaultTemplate = {
   subject: 'Timesheet Submission Reminder',
@@ -31,15 +32,14 @@ function renderTemplate(template, values) {
 }
 
 async function getTemplate() {
-  const database = await getDatabase();
-  return database.emailTemplate || defaultTemplate;
+  return (await prisma.emailTemplate.findUnique({ where: { id: TEMPLATE_ID }, select: { subject: true, body: true } })) || defaultTemplate;
 }
 
 async function saveTemplate(template) {
   const cleaned = { subject: template.subject.trim(), body: template.body.trim() };
   const validation = validateTemplate(cleaned);
   if (validation.errors.length) return { ...validation, template: null };
-  await updateDatabase((database) => { database.emailTemplate = cleaned; });
+  await prisma.emailTemplate.upsert({ where: { id: TEMPLATE_ID }, update: cleaned, create: { id: TEMPLATE_ID, ...cleaned } });
   return { ...validation, template: cleaned };
 }
 

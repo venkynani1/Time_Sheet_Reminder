@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Member {
+  id               String         @id @default(uuid())
+  name             String
+  email            String         @unique
+  mobile           String         @default("")
+  telegramChatId   String         @default("")
+  token            String         @unique @default(uuid())
+  active           Boolean        @default(true)
+  weeklyStatuses   WeeklyStatus[]
+}
+
+model WeeklyStatus {
+  id                 String   @id @default(uuid())
+  memberId           String
+  weekStartDate      String
+  weekEndDate        String
+  status             String   @default("PENDING")
+  submittedAt        DateTime?
+  lastReminderSentAt DateTime?
+  reminderCount      Int      @default(0)
+  member             Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([weekStartDate, memberId])
+  @@index([weekStartDate])
+}
+
+model ReminderLog {
+  id        String   @id @default(uuid())
+  memberId  String
+  channel   String
+  message   String
+  status    String
+  sentAt    DateTime @default(now())
+  error     String?
+
+  @@index([sentAt])
+}
+
+model EmailTemplate {
+  id        String   @id
+  subject   String
+  body      String
+}
