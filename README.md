@@ -77,7 +77,7 @@ Email continues to work when Telegram is disabled.
 PORT=5000
 CLIENT_URL=http://localhost:5173
 APP_BASE_URL=http://localhost:5173
-DATABASE_URL=postgresql://postgres.fihraeztsyjjufcqkqqg:[PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
+DATABASE_URL=postgresql://postgres.<PROJECT_REF>:[PASSWORD]@<POOLER_HOST>:6543/postgres?pgbouncer=true
 EMAIL_ENABLED=true
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -146,10 +146,26 @@ For later schema changes, update the Prisma schema and run `npm run db:push` loc
 Use the Transaction Pooler connection string only. Recommended format:
 
 ```text
-postgresql://postgres.fihraeztsyjjufcqkqqg:[PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
+postgresql://postgres.<PROJECT_REF>:[PASSWORD]@<POOLER_HOST>:6543/postgres?pgbouncer=true
 ```
 
 Replace `[PASSWORD]` locally or in Render Environment Variables. Never commit database passwords, OAuth credentials, or other secrets to source control.
+
+### Pooler Troubleshooting
+
+Use the Transaction Pooler URL with `?pgbouncer=true`, then run:
+
+```bash
+cd server
+npx prisma db push --accept-data-loss
+```
+
+If `db push` still hangs, generate SQL and run it manually in the Supabase SQL Editor:
+
+```bash
+cd server
+npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > prisma-schema.sql
+```
 
 ### Render Backend
 
@@ -165,7 +181,7 @@ Add these Render environment variables:
 PORT=5000
 CLIENT_URL=https://your-vercel-frontend.vercel.app
 APP_BASE_URL=https://your-vercel-frontend.vercel.app
-DATABASE_URL=postgresql://postgres.fihraeztsyjjufcqkqqg:[PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
+DATABASE_URL=postgresql://postgres.<PROJECT_REF>:[PASSWORD]@<POOLER_HOST>:6543/postgres?pgbouncer=true
 TIMEZONE=Asia/Kolkata
 EMAIL_ENABLED=true
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
