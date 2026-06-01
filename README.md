@@ -78,7 +78,6 @@ PORT=5000
 CLIENT_URL=http://localhost:5173
 APP_BASE_URL=http://localhost:5173
 DATABASE_URL=
-DIRECT_URL=
 EMAIL_ENABLED=true
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -132,8 +131,8 @@ Open `http://localhost:5173`.
 ### Supabase PostgreSQL
 
 1. Create a Supabase project.
-2. In the Supabase dashboard, open **Connect** and copy both the Transaction Pooler URI and Direct URI.
-3. In your local `server/.env`, set `DATABASE_URL` to the Supabase Transaction Pooler URI and `DIRECT_URL` to the Supabase Direct URI.
+2. In the Supabase dashboard, open **Connect** and copy the Transaction Pooler URI.
+3. In your local `server/.env`, set `DATABASE_URL` to the Supabase Transaction Pooler URI. Use this same pooled URL for local database setup and Render runtime.
 4. Run the one-time database setup locally before deploying Render:
 
 ```bash
@@ -142,7 +141,13 @@ npm run db:generate
 npm run db:push
 ```
 
-For later schema changes with checked-in Prisma migrations, run `npm run db:migrate:deploy` locally instead of `npm run db:push`. `DIRECT_URL` is used for local Prisma migration commands because Render may not be able to reach Supabase on port `5432`.
+For later schema changes, update the Prisma schema and run `npm run db:push` locally before deploying Render.
+
+Use the Transaction Pooler connection string only. Recommended format:
+
+```text
+postgresql://postgres.<PROJECT_REF>:<ENCODED_PASSWORD>@<POOLER_HOST>:6543/postgres
+```
 
 ### Render Backend
 
@@ -171,7 +176,7 @@ The old `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM`
 
 `CLIENT_URL` controls browser CORS access. `APP_BASE_URL` controls confirmation links in reminder emails and **must be the deployed Vercel frontend URL**, never the Render backend URL. Set both to the deployed Vercel URL without a trailing slash.
 
-The backend persists members, weekly statuses, reminder logs, and the editable email template in Supabase PostgreSQL. Set Render's `DATABASE_URL` to the Supabase Transaction Pooler URI for the running app. Do not run migrations during the Render build and do not add `DIRECT_URL` to Render unless it becomes reachable there. Run migrations manually from your local machine before deploying. Render's ephemeral filesystem is not used for application data.
+The backend persists members, weekly statuses, reminder logs, and the editable email template in Supabase PostgreSQL. Set Render's `DATABASE_URL` to the Supabase Transaction Pooler URI for the running app. Do not run migrations during the Render build. Run `npm run db:push` manually from your local machine before deploying. Render's ephemeral filesystem is not used for application data.
 
 ### Vercel Frontend
 
