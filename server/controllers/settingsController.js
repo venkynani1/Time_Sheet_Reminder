@@ -6,6 +6,18 @@ const templateService = require('../services/templateService');
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+async function dbHealth(req, res) {
+  try {
+    await checkDatabaseConnection();
+    res.json({ status: 'ok', database: { configured: true, accessible: true, error: null } });
+  } catch (error) {
+    res.status(503).json({
+      status: 'degraded',
+      database: { configured: Boolean(process.env.DATABASE_URL), accessible: false, error: error.message },
+    });
+  }
+}
+
 async function health(req, res) {
   const missingVars = gmailApiEmailService.getMissingConfiguration();
   let storageAccessible = true;
@@ -52,4 +64,4 @@ async function updateEmailTemplate(req, res, next) {
   try { const result = await templateService.saveTemplate(req.body); if (result.errors.length) return res.status(400).json({ errors: result.errors, warnings: result.warnings }); res.json({ ...result, preview: templateService.previewTemplate(result.template) }); } catch (error) { next(error); }
 }
 
-module.exports = { getEmailTemplate, health, sendTestEmail, updateEmailTemplate };
+module.exports = { dbHealth, getEmailTemplate, health, sendTestEmail, updateEmailTemplate };

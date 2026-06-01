@@ -77,7 +77,7 @@ Email continues to work when Telegram is disabled.
 PORT=5000
 CLIENT_URL=http://localhost:5173
 APP_BASE_URL=http://localhost:5173
-DATABASE_URL=
+DATABASE_URL=postgresql://postgres.fihraeztsyjjufcqkqqg:[PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
 EMAIL_ENABLED=true
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -146,8 +146,10 @@ For later schema changes, update the Prisma schema and run `npm run db:push` loc
 Use the Transaction Pooler connection string only. Recommended format:
 
 ```text
-postgresql://postgres.<PROJECT_REF>:<ENCODED_PASSWORD>@<POOLER_HOST>:6543/postgres
+postgresql://postgres.fihraeztsyjjufcqkqqg:[PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
 ```
+
+Replace `[PASSWORD]` locally or in Render Environment Variables. Never commit database passwords, OAuth credentials, or other secrets to source control.
 
 ### Render Backend
 
@@ -163,7 +165,7 @@ Add these Render environment variables:
 PORT=5000
 CLIENT_URL=https://your-vercel-frontend.vercel.app
 APP_BASE_URL=https://your-vercel-frontend.vercel.app
-DATABASE_URL=your_supabase_transaction_pooler_uri
+DATABASE_URL=postgresql://postgres.fihraeztsyjjufcqkqqg:[PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:6543/postgres
 TIMEZONE=Asia/Kolkata
 EMAIL_ENABLED=true
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
@@ -176,7 +178,7 @@ The old `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM`
 
 `CLIENT_URL` controls browser CORS access. `APP_BASE_URL` controls confirmation links in reminder emails and **must be the deployed Vercel frontend URL**, never the Render backend URL. Set both to the deployed Vercel URL without a trailing slash.
 
-The backend persists members, weekly statuses, reminder logs, and the editable email template in Supabase PostgreSQL. Set Render's `DATABASE_URL` to the Supabase Transaction Pooler URI for the running app. Do not run migrations during the Render build. Run `npm run db:push` manually from your local machine before deploying. Render's ephemeral filesystem is not used for application data.
+The backend persists members, weekly statuses, reminder logs, and the editable email template in Supabase PostgreSQL. Set `DATABASE_URL` in Render Environment Variables to the Supabase Transaction Pooler URI for the running app. Do not run migrations during the Render build. Run `npm run db:push` manually from your local machine before deploying. Render's ephemeral filesystem is not used for application data.
 
 ### Vercel Frontend
 
@@ -221,6 +223,7 @@ The page displays the member's name and asks whether the timesheet has been subm
 | `GET` | `/api/timesheet/settings` | Show non-secret channel settings |
 | `GET` | `/api/health` | Check Gmail API configuration, scheduler state, and PostgreSQL access |
 | `GET` | `/api/healthChecks` | Render-friendly Gmail API, scheduler, and storage health check |
+| `GET` | `/api/db-health` | Check whether PostgreSQL is configured and reachable |
 | `POST` | `/api/settings/test-email` | Manually send one Gmail API test email using `{ "email": "recipient@example.com" }` |
 | `GET` | `/api/settings/email-template` | Get the saved email template and sample preview |
 | `PUT` | `/api/settings/email-template` | Save the common email template |

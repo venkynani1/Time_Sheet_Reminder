@@ -1,12 +1,14 @@
 // Starts the weekly timesheet reminder API and its India-time scheduler.
 require('dotenv').config();
 
+if (!process.env.DATABASE_URL) console.error('Startup configuration error: DATABASE_URL is required. Set it to the Supabase Transaction Pooler URI.');
+
 const cors = require('cors');
 const express = require('express');
 const memberRoutes = require('./routes/memberRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const timesheetRoutes = require('./routes/timesheetRoutes');
-const { health } = require('./controllers/settingsController');
+const { dbHealth, health } = require('./controllers/settingsController');
 const { startScheduler } = require('./services/schedulerService');
 
 const app = express();
@@ -43,6 +45,7 @@ app.options(/.*/, cors(corsOptions));
 app.use(express.json());
 app.get('/api/health', health);
 app.get('/api/healthChecks', health);
+app.get('/api/db-health', dbHealth);
 app.get('/api/cors-debug', (req, res) => res.json({ clientUrl: process.env.CLIENT_URL, allowedOrigins }));
 app.use('/api/members', memberRoutes);
 app.use('/api/settings', settingsRoutes);
