@@ -133,22 +133,23 @@ Open `http://localhost:5173`.
 
 1. Create a Supabase project.
 2. In the Supabase dashboard, open **Connect** and copy both the Transaction Pooler URI and Direct URI.
-3. Set `DATABASE_URL` to the Supabase Transaction Pooler URI. The running application uses this pooled connection.
-4. Set `DIRECT_URL` to the Supabase Direct URI. Prisma uses this direct connection for migrations.
-5. Run the migration locally when needed:
+3. In your local `server/.env`, set `DATABASE_URL` to the Supabase Transaction Pooler URI and `DIRECT_URL` to the Supabase Direct URI.
+4. Run the one-time database setup locally before deploying Render:
 
 ```bash
 cd server
-npm run prisma:generate
-npm run prisma:migrate
+npm run db:generate
+npm run db:push
 ```
+
+For later schema changes with checked-in Prisma migrations, run `npm run db:migrate:deploy` locally instead of `npm run db:push`. `DIRECT_URL` is used for local Prisma migration commands because Render may not be able to reach Supabase on port `5432`.
 
 ### Render Backend
 
 Create a Render Web Service from this GitHub repository:
 
 - Root directory: `server`
-- Build command: `npm install && npx prisma generate && npx prisma migrate deploy`
+- Build command: `npm install && npx prisma generate`
 - Start command: `npm start`
 
 Add these Render environment variables:
@@ -158,7 +159,6 @@ PORT=5000
 CLIENT_URL=https://your-vercel-frontend.vercel.app
 APP_BASE_URL=https://your-vercel-frontend.vercel.app
 DATABASE_URL=your_supabase_transaction_pooler_uri
-DIRECT_URL=your_supabase_direct_uri
 TIMEZONE=Asia/Kolkata
 EMAIL_ENABLED=true
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
@@ -171,7 +171,7 @@ The old `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM`
 
 `CLIENT_URL` controls browser CORS access. `APP_BASE_URL` controls confirmation links in reminder emails and **must be the deployed Vercel frontend URL**, never the Render backend URL. Set both to the deployed Vercel URL without a trailing slash.
 
-The backend persists members, weekly statuses, reminder logs, and the editable email template in Supabase PostgreSQL. Set Render's `DATABASE_URL` to the Supabase Transaction Pooler URI for the running app and `DIRECT_URL` to the Supabase Direct URI for `prisma migrate deploy`. Render's ephemeral filesystem is not used for application data.
+The backend persists members, weekly statuses, reminder logs, and the editable email template in Supabase PostgreSQL. Set Render's `DATABASE_URL` to the Supabase Transaction Pooler URI for the running app. Do not run migrations during the Render build and do not add `DIRECT_URL` to Render unless it becomes reachable there. Run migrations manually from your local machine before deploying. Render's ephemeral filesystem is not used for application data.
 
 ### Vercel Frontend
 
