@@ -69,8 +69,8 @@ async function sendTestEmail(req, res) {
   if (missingVars.length) {
     return res.status(400).json({ error: `Update ${missingVars.join(', ')} before sending a test email.` });
   }
-  const subject = 'Weekly Timesheet Reminder System test email';
-  const text = 'Your Gmail API settings are working. This is a manual test email from the Weekly Timesheet Reminder System.';
+  const subject = 'Hello from Timesheet Reminder';
+  const text = 'This is a simple email test.';
   let gmailResponse = null;
   try {
     gmailResponse = await gmailApiEmailService.sendEmail({
@@ -81,7 +81,7 @@ async function sendTestEmail(req, res) {
     });
     logEmailDelivery({ recipientEmail: email, subject, gmailMessageId: gmailResponse.id, gmailThreadId: gmailResponse.threadId, status: 'SENT' });
     await prisma.reminderLog.create({ data: { memberId: null, channel: 'EMAIL', message: text, status: 'SENT', error: null, gmailMessageId: gmailResponse.id, gmailThreadId: gmailResponse.threadId, recipientEmail: email, subject, providerResponseSummary: summarizeGmailResponse(gmailResponse) } });
-    res.json({ message: `Test email sent to ${email}.` });
+    res.json({ message: `Simple email test sent to ${email}.`, gmailMessageId: gmailResponse.id, gmailThreadId: gmailResponse.threadId });
   } catch (error) {
     logEmailDelivery({ recipientEmail: email, subject, status: 'FAILED', error: error.message });
     await prisma.reminderLog.create({ data: { memberId: null, channel: 'EMAIL', message: text, status: 'FAILED', error: error.message, recipientEmail: email, subject } });
