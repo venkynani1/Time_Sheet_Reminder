@@ -4,7 +4,7 @@ const gmailApiEmailService = require('./gmailApiEmailService');
 const templateService = require('./templateService');
 const telegramService = require('./telegramService');
 const whatsappService = require('../whatsappService');
-const { getCycleForDate, getWindowState } = require('./weekService');
+const { formatIndiaDateTime, getCycleForDate, getWindowState } = require('./weekService');
 
 function buildConfirmationLink(memberToken) {
   if (!process.env.APP_BASE_URL) throw new Error('APP_BASE_URL must be configured with the public Vercel frontend URL.');
@@ -75,10 +75,13 @@ async function confirmByToken(token, answer) {
   return { member, status: (await getCurrentWeek()).statuses.find((item) => item.memberId === member.id) || null };
 }
 
-async function sendReminders({ ignoreWindow = false, date = new Date() } = {}) {
+async function sendReminders({ ignoreWindow = false, date = new Date(), source = 'manual' } = {}) {
   if (!ignoreWindow && !getWindowState(date).active) throw new Error('Reminder window is closed. No reminders were sent.');
   const current = await getCurrentWeek(date);
   const pending = current.statuses.filter((item) => item.status === 'PENDING' && item.member.active);
+  if (source === 'automatic') {
+    console.log(`Scheduler automatic pending count: ${pending.length} at ${formatIndiaDateTime(date)} (${process.env.TIMEZONE || 'Asia/Kolkata'}).`);
+  }
   const template = await templateService.getTemplate();
   const results = [];
   for (const item of pending) {
