@@ -3,6 +3,7 @@ const { prisma } = require('./dataService');
 const gmailApiEmailService = require('./gmailApiEmailService');
 const templateService = require('./templateService');
 const telegramService = require('./telegramService');
+const whatsappService = require('../whatsappService');
 const { getCycleForDate, getWindowState } = require('./weekService');
 
 function buildConfirmationLink(memberToken) {
@@ -67,16 +68,19 @@ async function sendReminders({ ignoreWindow = false, date = new Date() } = {}) {
     const confirmationUrl = buildConfirmationLink(item.member.token);
     console.log('Confirmation link generated:', confirmationUrl);
     const content = templateService.renderTemplate(template, { name: item.member.name, confirmationLink: confirmationUrl, deadline: 'Monday 9:00 AM', weekRange: `${item.weekStartDate} to ${item.weekEndDate}` });
-    const channels = [{ name: 'EMAIL', enabled: process.env.EMAIL_ENABLED !== 'false', ready: true, send: () => gmailApiEmailService.sendEmail({ to: item.member.email, subject: content.subject, text: content.body, html: `<p>${content.body.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>` }) }];
+    const channels = [{ name: 'EMAIL', enabled: process.env.EMAIL_ENABLED !== 'false', ready: true, send: async () => { await gmailApiEmailService.sendEmail({ to: item.member.email, subject: content.subject, text: content.body, html: `<p>${content.body.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>` }); return { status: 'SENT', error: null }; } }];
     channels.push({ name: 'TELEGRAM', enabled: process.env.TELEGRAM_ENABLED === 'true', ready: Boolean(item.member.telegramChatId), send: () => telegramService.sendReminder(item.member, content.body, confirmationUrl) });
+    channels.push({ name: 'WHATSAPP', enabled: process.env.WHATSAPP_ENABLED === 'true', ready: true, message: whatsappService.buildReminderMessage(item.member, { confirmationLink: confirmationUrl, deadline: 'Monday 9:00 AM' }), send: () => whatsappService.sendReminder(item.member, { confirmationLink: confirmationUrl, deadline: 'Monday 9:00 AM' }) });
     const selectedChannels = channels.filter((entry) => entry.enabled && entry.ready);
+    let attemptedDelivery = false;
     for (const channel of selectedChannels) {
       let status = 'SENT'; let error = null;
-      try { await channel.send(); } catch (sendError) { status = 'FAILED'; error = sendError.message; }
-      await prisma.reminderLog.create({ data: { memberId: item.memberId, channel: channel.name, message: content.body, status, error } });
+      try { const result = await channel.send(); status = result?.status || 'SENT'; error = result?.error || null; } catch (sendError) { status = 'FAILED'; error = sendError.message; }
+      if (status !== 'SKIPPED') attemptedDelivery = true;
+      await prisma.reminderLog.create({ data: { memberId: item.memberId, channel: channel.name, message: channel.message || content.body, status, error } });
       results.push({ memberId: item.memberId, channel: channel.name, status, error });
     }
-    if (selectedChannels.length) {
+    if (attemptedDelivery) {
       await prisma.weeklyStatus.update({ where: { id: item.id }, data: { lastReminderSentAt: new Date(), reminderCount: { increment: 1 } } });
     }
   }

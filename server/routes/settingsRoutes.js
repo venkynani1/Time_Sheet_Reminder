@@ -3,6 +3,7 @@ const router = require('express').Router();
 const controller = require('../controllers/settingsController');
 router.get('/health', controller.health);
 router.get('/email-template', controller.getEmailTemplate);
+router.get('/whatsapp-status', controller.whatsappStatus);
 router.post('/test-email', controller.sendTestEmail);
 router.put('/email-template', controller.updateEmailTemplate);
 module.exports = router;

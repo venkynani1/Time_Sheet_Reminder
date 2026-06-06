@@ -18,3 +18,4 @@ export const getSettings = async () => (await api.get('/timesheet/settings')).da
 export const sendTestEmail = async (email) => (await api.post('/settings/test-email', { email })).data;
 export const getEmailTemplate = async () => (await api.get('/settings/email-template')).data;
 export const updateEmailTemplate = async (template) => (await api.put('/settings/email-template', template)).data;
+export const getWhatsAppStatus = async () => (await api.get('/settings/whatsapp-status')).data;

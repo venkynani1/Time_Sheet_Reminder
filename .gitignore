@@ -10,3 +10,5 @@ client/.env
 .vercel/
 .DS_Store
 *.log
+.wwebjs_auth/
+server/.wwebjs_auth/

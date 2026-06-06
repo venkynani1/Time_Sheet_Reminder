@@ -7,6 +7,6 @@ async function sendNow(req, res) { try { const results = await timesheetService.
 async function reset(req, res, next) { try { res.json({ statuses: await timesheetService.resetWeek() }); } catch (error) { next(error); } }
 async function mark(req, res, next) { try { const status = await timesheetService.markSubmitted(req.params.memberId); status ? res.json(status) : res.status(404).json({ error: 'Current-week member status not found.' }); } catch (error) { next(error); } }
 async function logs(req, res, next) { try { res.json(await timesheetService.getLogs()); } catch (error) { next(error); } }
-async function settings(req, res) { res.json({ timezone: process.env.TIMEZONE || 'Asia/Kolkata', emailEnabled: process.env.EMAIL_ENABLED !== 'false', telegramEnabled: process.env.TELEGRAM_ENABLED === 'true', twilioEnabled: process.env.TWILIO_ENABLED === 'true' }); }
+async function settings(req, res) { res.json({ timezone: process.env.TIMEZONE || 'Asia/Kolkata', emailEnabled: process.env.EMAIL_ENABLED !== 'false', telegramEnabled: process.env.TELEGRAM_ENABLED === 'true', whatsappEnabled: process.env.WHATSAPP_ENABLED === 'true', twilioEnabled: process.env.TWILIO_ENABLED === 'true' }); }
 
 module.exports = { confirm, current, logs, mark, reset, sendNow, settings };

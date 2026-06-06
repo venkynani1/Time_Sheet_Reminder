@@ -3,11 +3,13 @@
 
 This full-stack app helps a team collect weekly timesheets without paid SMS. It sends reminders only to saved active members who are still pending, records delivery attempts, and gives each member a unique confirmation link.
 
-The default provider is Gmail API email over HTTPS. Telegram Bot reminders are optional. Twilio remains available as a future dependency but is disabled and unused by default.
+The default provider is Gmail API email over HTTPS. Telegram Bot and unofficial WhatsApp Web reminders are optional. Twilio remains available as a future dependency but is disabled and unused by default.
 
 ## Safety
 
 Do not spam. Add only team members who have agreed to receive reminders. The app sends only to saved active members, stops reminding a member after confirmation, and stops all reminder runs after Monday at `9:00 AM` India time.
+
+WhatsApp automation through `whatsapp-web.js` is unofficial. Use it only for consented team members, avoid bulk spam, and understand that an account may be restricted if abused.
 
 ## Weekly Reminder Logic
 
@@ -28,7 +30,7 @@ Previous weekly statuses and reminder logs remain in Supabase PostgreSQL. A manu
 - **Team Members:** add, edit, disable, or delete recipients with name, email, mobile, and optional Telegram chat ID
 - **Confirmation Page:** public `http://localhost:5173/confirm/<memberToken>` link with `Yes` and `Not Yet`
 - **Reminder Logs:** delivery-attempt history for enabled channels
-- **Settings:** enabled-channel summary and scheduler timezone
+- **Settings:** enabled-channel summary, WhatsApp connection status, and scheduler timezone
 
 ## Setup
 
@@ -71,6 +73,17 @@ Do not commit `server/.env`. Do not print or log OAuth credentials.
 
 Email continues to work when Telegram is disabled.
 
+## Optional WhatsApp Setup
+
+WhatsApp Web automation is disabled by default and does not affect Gmail API email or Telegram reminders.
+
+1. Set `WHATSAPP_ENABLED=true`.
+2. Keep `WHATSAPP_SESSION_PATH=.wwebjs_auth` locally or set it to a persistent disk path on a server.
+3. Start the backend and scan the QR code printed in the Render/local logs with the WhatsApp mobile app.
+4. Add member mobile numbers in international format. India numbers may use `91XXXXXXXXXX`.
+
+Do not commit the WhatsApp session folder. Do not expose QR codes or session files.
+
 ## Environment Variables
 
 ```dotenv
@@ -91,6 +104,8 @@ GOOGLE_REFRESH_TOKEN=
 GMAIL_SENDER_EMAIL=timesheetreminderr@gmail.com
 TELEGRAM_ENABLED=false
 TELEGRAM_BOT_TOKEN=
+WHATSAPP_ENABLED=false
+WHATSAPP_SESSION_PATH=.wwebjs_auth
 TWILIO_ENABLED=false
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
@@ -107,6 +122,8 @@ GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
 GOOGLE_REFRESH_TOKEN=your_google_oauth_refresh_token
 GMAIL_SENDER_EMAIL=timesheetreminderr@gmail.com
 ```
+
+WhatsApp Web sessions may not persist reliably on free Render unless persistent disk is configured. Prefer local hosting or a VPS for WhatsApp automation.
 
 ## Run
 
@@ -192,6 +209,8 @@ GMAIL_SENDER_EMAIL=timesheetreminderr@gmail.com
 
 The old `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, and `EMAIL_FROM` settings are optional legacy values. Gmail API sending does not use SMTP ports by default.
 
+For WhatsApp automation on Render, set `WHATSAPP_ENABLED=true` only if you have a persistent disk for `WHATSAPP_SESSION_PATH`. Free Render instances may lose the WhatsApp Web session between restarts, so local hosting or a VPS is recommended.
+
 `CLIENT_URL` controls browser CORS access. `APP_BASE_URL` controls confirmation links in reminder emails and **must be the deployed Vercel frontend URL**, never the Render backend URL. Set both to the deployed Vercel URL without a trailing slash.
 
 The backend persists members, weekly statuses, reminder logs, and the editable email template in Supabase PostgreSQL. Set `DATABASE_URL` in Render Environment Variables to the Supabase Transaction Pooler URI for the running app. Do not run migrations during the Render build. Run `npm run db:push` manually from your local machine before deploying. Render's ephemeral filesystem is not used for application data.
@@ -242,6 +261,7 @@ The page displays the member's name and asks whether the timesheet has been subm
 | `GET` | `/api/db-health` | Check whether PostgreSQL is configured and reachable |
 | `POST` | `/api/settings/test-email` | Manually send one Gmail API test email using `{ "email": "recipient@example.com" }` |
 | `GET` | `/api/settings/email-template` | Get the saved email template and sample preview |
+| `GET` | `/api/settings/whatsapp-status` | Show non-secret WhatsApp enabled, connected, and last-error status |
 | `PUT` | `/api/settings/email-template` | Save the common email template |
 | `POST` | `/api/members/import` | Import members from CSV content |
 

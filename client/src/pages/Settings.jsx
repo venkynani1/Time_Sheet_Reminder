@@ -1,7 +1,7 @@
 // Provides channel details, manual Gmail API testing, and editable email templates.
 import { useEffect, useState } from 'react';
 import PageHeader from '../components/PageHeader';
-import { getEmailTemplate, getSettings, sendTestEmail, updateEmailTemplate } from '../services/api';
+import { getEmailTemplate, getSettings, getWhatsAppStatus, sendTestEmail, updateEmailTemplate } from '../services/api';
 
 function Settings() {
   const [settings, setSettings] = useState(null);
@@ -11,9 +11,11 @@ function Settings() {
   const [template, setTemplate] = useState({ subject: '', body: '' });
   const [preview, setPreview] = useState({ subject: '', body: '' });
   const [templateNotice, setTemplateNotice] = useState(null);
+  const [whatsappStatus, setWhatsappStatus] = useState(null);
 
   useEffect(() => {
     getSettings().then(setSettings);
+    getWhatsAppStatus().then(setWhatsappStatus);
     getEmailTemplate().then((result) => { setTemplate(result.template); setPreview(result.preview); });
   }, []);
 
@@ -40,6 +42,20 @@ function Settings() {
     <div className="row g-4">
       {[['Email via Gmail API', settings?.emailEnabled, 'Primary HTTPS provider. Configure Google OAuth2 credentials and the Gmail sender address.'], ['Telegram Bot', settings?.telegramEnabled, 'Optional free channel. Enable it only after setting a bot token and member chat IDs.'], ['Twilio SMS', settings?.twilioEnabled, 'Optional future provider. It is disabled by default and not used by the reminder workflow.']].map(([title, enabled, text]) => <div className="col-md-4" key={title}><div className="card content-card h-100"><div className="card-body p-4"><div className="d-flex justify-content-between"><h2 className="h5">{title}</h2><span className={`badge text-bg-${enabled ? 'success' : 'secondary'}`}>{enabled ? 'Enabled' : 'Disabled'}</span></div><p className="text-secondary mb-0">{text}</p></div></div></div>)}
     </div>
+
+    <div className="card content-card mt-4"><div className="card-body p-4">
+      <div className="d-flex flex-wrap justify-content-between gap-3">
+        <div>
+          <h2 className="h5">WhatsApp</h2>
+          <p className="text-secondary mb-0">Optional unofficial WhatsApp Web channel. Enable only after configuring the backend and consenting recipients.</p>
+        </div>
+        <div className="d-flex flex-wrap gap-2 align-items-start">
+          <span className={`badge text-bg-${whatsappStatus?.enabled ? 'success' : 'secondary'}`}>{whatsappStatus?.enabled ? 'Enabled' : 'Disabled'}</span>
+          <span className={`badge text-bg-${whatsappStatus?.connected ? 'success' : 'secondary'}`}>{whatsappStatus?.connected ? 'Connected' : 'Not Connected'}</span>
+        </div>
+      </div>
+      {whatsappStatus?.lastError && <div className="alert alert-warning mt-3 mb-0">Last error: {whatsappStatus.lastError}</div>}
+    </div></div>
 
     <div className="card content-card mt-4"><div className="card-body p-4">
       <h2 className="h5">Email Template</h2>

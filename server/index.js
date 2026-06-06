@@ -10,6 +10,7 @@ const settingsRoutes = require('./routes/settingsRoutes');
 const timesheetRoutes = require('./routes/timesheetRoutes');
 const { dbHealth, health } = require('./controllers/settingsController');
 const { startScheduler } = require('./services/schedulerService');
+const whatsappService = require('./whatsappService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -56,6 +57,7 @@ app.use((err, req, res, next) => {
 });
 
 if (require.main === module) {
+  whatsappService.initialize();
   startScheduler();
   app.listen(PORT, () => console.log(`Timesheet Reminder API running on http://localhost:${PORT}`));
 }

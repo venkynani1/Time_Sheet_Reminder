@@ -3,6 +3,7 @@ const { checkDatabaseConnection } = require('../services/dataService');
 const gmailApiEmailService = require('../services/gmailApiEmailService');
 const { getSchedulerStatus } = require('../services/schedulerService');
 const templateService = require('../services/templateService');
+const whatsappService = require('../whatsappService');
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -59,9 +60,10 @@ async function sendTestEmail(req, res) {
     res.status(502).json({ error: `Gmail API test failed: ${error.message}` });
   }
 }
+async function whatsappStatus(req, res) { res.json(whatsappService.getStatus()); }
 async function getEmailTemplate(req, res, next) { try { const template = await templateService.getTemplate(); res.json({ template, preview: templateService.previewTemplate(template) }); } catch (error) { next(error); } }
 async function updateEmailTemplate(req, res, next) {
   try { const result = await templateService.saveTemplate(req.body); if (result.errors.length) return res.status(400).json({ errors: result.errors, warnings: result.warnings }); res.json({ ...result, preview: templateService.previewTemplate(result.template) }); } catch (error) { next(error); }
 }
 
-module.exports = { dbHealth, getEmailTemplate, health, sendTestEmail, updateEmailTemplate };
+module.exports = { dbHealth, getEmailTemplate, health, sendTestEmail, updateEmailTemplate, whatsappStatus };
