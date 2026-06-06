@@ -11,6 +11,23 @@ function buildConfirmationLink(memberToken) {
   return `${process.env.APP_BASE_URL.replace(/\/$/, '')}/confirm/${memberToken}`;
 }
 
+function summarizeGmailResponse(response) {
+  if (!response) return null;
+  return `Gmail API accepted message id ${response.id || 'unknown'} in thread ${response.threadId || 'unknown'}.`;
+}
+
+function logEmailDelivery({ recipientEmail, subject, gmailMessageId, gmailThreadId, status, error }) {
+  console.log(JSON.stringify({
+    channel: 'EMAIL',
+    recipient: recipientEmail,
+    subject,
+    gmailMessageId,
+    gmailThreadId,
+    status,
+    error: error || null,
+  }));
+}
+
 async function resetWeek(date = new Date()) {
   const cycle = getCycleForDate(date);
   return prisma.$transaction(async (transaction) => {
@@ -68,16 +85,18 @@ async function sendReminders({ ignoreWindow = false, date = new Date() } = {}) {
     const confirmationUrl = buildConfirmationLink(item.member.token);
     console.log('Confirmation link generated:', confirmationUrl);
     const content = templateService.renderTemplate(template, { name: item.member.name, confirmationLink: confirmationUrl, deadline: 'Monday 9:00 AM', weekRange: `${item.weekStartDate} to ${item.weekEndDate}` });
-    const channels = [{ name: 'EMAIL', enabled: process.env.EMAIL_ENABLED !== 'false', ready: true, send: async () => { await gmailApiEmailService.sendEmail({ to: item.member.email, subject: content.subject, text: content.body, html: `<p>${content.body.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>` }); return { status: 'SENT', error: null }; } }];
+    const channels = [{ name: 'EMAIL', enabled: process.env.EMAIL_ENABLED !== 'false', ready: true, recipientEmail: item.member.email, subject: content.subject, send: async () => { const gmailResponse = await gmailApiEmailService.sendEmail({ to: item.member.email, subject: content.subject, text: content.body, html: `<p>${content.body.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('\n', '<br>')}</p>` }); return { status: 'SENT', error: null, gmailMessageId: gmailResponse.id, gmailThreadId: gmailResponse.threadId, providerResponseSummary: summarizeGmailResponse(gmailResponse) }; } }];
     channels.push({ name: 'TELEGRAM', enabled: process.env.TELEGRAM_ENABLED === 'true', ready: Boolean(item.member.telegramChatId), send: () => telegramService.sendReminder(item.member, content.body, confirmationUrl) });
     channels.push({ name: 'WHATSAPP', enabled: process.env.WHATSAPP_ENABLED === 'true', ready: true, message: whatsappService.buildReminderMessage(item.member, { confirmationLink: confirmationUrl, deadline: 'Monday 9:00 AM' }), send: () => whatsappService.sendReminder(item.member, { confirmationLink: confirmationUrl, deadline: 'Monday 9:00 AM' }) });
     const selectedChannels = channels.filter((entry) => entry.enabled && entry.ready);
     let attemptedDelivery = false;
     for (const channel of selectedChannels) {
       let status = 'SENT'; let error = null;
-      try { const result = await channel.send(); status = result?.status || 'SENT'; error = result?.error || null; } catch (sendError) { status = 'FAILED'; error = sendError.message; }
+      let result = null;
+      try { result = await channel.send(); status = result?.status || 'SENT'; error = result?.error || null; } catch (sendError) { status = 'FAILED'; error = sendError.message; }
       if (status !== 'SKIPPED') attemptedDelivery = true;
-      await prisma.reminderLog.create({ data: { memberId: item.memberId, channel: channel.name, message: channel.message || content.body, status, error } });
+      if (channel.name === 'EMAIL') logEmailDelivery({ recipientEmail: channel.recipientEmail, subject: channel.subject, gmailMessageId: result?.gmailMessageId, gmailThreadId: result?.gmailThreadId, status, error });
+      await prisma.reminderLog.create({ data: { memberId: item.memberId, channel: channel.name, message: channel.message || content.body, status, error, gmailMessageId: result?.gmailMessageId || null, gmailThreadId: result?.gmailThreadId || null, recipientEmail: channel.recipientEmail || null, subject: channel.subject || null, providerResponseSummary: result?.providerResponseSummary || null } });
       results.push({ memberId: item.memberId, channel: channel.name, status, error });
     }
     if (attemptedDelivery) {
@@ -89,7 +108,7 @@ async function sendReminders({ ignoreWindow = false, date = new Date() } = {}) {
 
 async function getLogs() {
   const logs = await prisma.reminderLog.findMany({ orderBy: { sentAt: 'desc' } });
-  const members = await prisma.member.findMany({ where: { id: { in: logs.map((log) => log.memberId) } } });
+  const members = await prisma.member.findMany({ where: { id: { in: logs.map((log) => log.memberId).filter(Boolean) } } });
   const membersById = new Map(members.map((member) => [member.id, member]));
   return logs.map((log) => ({ ...log, member: membersById.get(log.memberId) }));
 }

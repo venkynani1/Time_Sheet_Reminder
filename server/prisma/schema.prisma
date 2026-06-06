@@ -34,13 +34,18 @@ model WeeklyStatus {
 }
 
 model ReminderLog {
-  id        String   @id @default(uuid())
-  memberId  String
-  channel   String
-  message   String
-  status    String
-  sentAt    DateTime @default(now())
-  error     String?
+  id                      String   @id @default(uuid())
+  memberId                String?
+  channel                 String
+  message                 String
+  status                  String
+  sentAt                  DateTime @default(now())
+  error                   String?
+  gmailMessageId          String?
+  gmailThreadId           String?
+  recipientEmail          String?
+  subject                 String?
+  providerResponseSummary String?
 
   @@index([sentAt])
 }

@@ -16,6 +16,8 @@ export const markSubmitted = async (memberId) => (await api.post(`/timesheet/mar
 export const getLogs = async () => (await api.get('/timesheet/logs')).data;
 export const getSettings = async () => (await api.get('/timesheet/settings')).data;
 export const sendTestEmail = async (email) => (await api.post('/settings/test-email', { email })).data;
+export const sendReminderTemplateTest = async (email) => (await api.post('/settings/test-reminder-template', { email })).data;
+export const getEmailDiagnostics = async () => (await api.get('/settings/email-diagnostics')).data;
 export const getEmailTemplate = async () => (await api.get('/settings/email-template')).data;
 export const updateEmailTemplate = async (template) => (await api.put('/settings/email-template', template)).data;
 export const getWhatsAppStatus = async () => (await api.get('/settings/whatsapp-status')).data;

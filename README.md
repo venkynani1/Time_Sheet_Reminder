@@ -169,6 +169,15 @@ npm run db:push
 
 For later schema changes, update the Prisma schema and run `npm run db:push` locally before deploying Render.
 
+Email diagnostics add nullable columns to `ReminderLog`. After pulling this version, update Supabase before sending reminders:
+
+```bash
+cd server
+npm run db:push
+```
+
+If you apply SQL manually, run `server/prisma/migrations/20260606000000_email_diagnostics/migration.sql` in the Supabase SQL Editor.
+
 Use the Transaction Pooler connection string only. Recommended format:
 
 ```text
@@ -271,6 +280,8 @@ The page displays the member's name and asks whether the timesheet has been subm
 | `POST` | `/api/settings/test-email` | Manually send one Gmail API test email using `{ "email": "recipient@example.com" }` |
 | `GET` | `/api/settings/email-template` | Get the saved email template and sample preview |
 | `GET` | `/api/settings/whatsapp-status` | Show non-secret WhatsApp enabled, connected, and last-error status |
+| `GET` | `/api/settings/email-diagnostics` | Show the last 50 Gmail API reminder diagnostic log entries |
+| `POST` | `/api/settings/test-reminder-template` | Send the current reminder template to one test email without changing member status |
 | `PUT` | `/api/settings/email-template` | Save the common email template |
 | `POST` | `/api/members/import` | Import members from CSV content |
 

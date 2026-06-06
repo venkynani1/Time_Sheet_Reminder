@@ -32,12 +32,17 @@ CREATE TABLE IF NOT EXISTS "WeeklyStatus" (
 
 CREATE TABLE IF NOT EXISTS "ReminderLog" (
     "id" TEXT NOT NULL,
-    "memberId" TEXT NOT NULL,
+    "memberId" TEXT,
     "channel" TEXT NOT NULL,
     "message" TEXT NOT NULL,
     "status" TEXT NOT NULL,
     "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "error" TEXT,
+    "gmailMessageId" TEXT,
+    "gmailThreadId" TEXT,
+    "recipientEmail" TEXT,
+    "subject" TEXT,
+    "providerResponseSummary" TEXT,
 
     CONSTRAINT "ReminderLog_pkey" PRIMARY KEY ("id")
 );
@@ -55,6 +60,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS "Member_token_key" ON "Member"("token");
 CREATE INDEX IF NOT EXISTS "WeeklyStatus_weekStartDate_idx" ON "WeeklyStatus"("weekStartDate");
 CREATE UNIQUE INDEX IF NOT EXISTS "WeeklyStatus_weekStartDate_memberId_key" ON "WeeklyStatus"("weekStartDate", "memberId");
 CREATE INDEX IF NOT EXISTS "ReminderLog_sentAt_idx" ON "ReminderLog"("sentAt");
+
+ALTER TABLE "ReminderLog"
+    ALTER COLUMN "memberId" DROP NOT NULL,
+    ADD COLUMN IF NOT EXISTS "gmailMessageId" TEXT,
+    ADD COLUMN IF NOT EXISTS "gmailThreadId" TEXT,
+    ADD COLUMN IF NOT EXISTS "recipientEmail" TEXT,
+    ADD COLUMN IF NOT EXISTS "subject" TEXT,
+    ADD COLUMN IF NOT EXISTS "providerResponseSummary" TEXT;
 
 DO $$
 BEGIN
