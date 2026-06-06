@@ -79,8 +79,16 @@ WhatsApp Web automation is disabled by default and does not affect Gmail API ema
 
 1. Set `WHATSAPP_ENABLED=true`.
 2. Keep `WHATSAPP_SESSION_PATH=.wwebjs_auth` locally or set it to a persistent disk path on a server.
-3. Start the backend and scan the QR code printed in the Render/local logs with the WhatsApp mobile app.
-4. Add member mobile numbers in international format. India numbers may use `91XXXXXXXXXX`.
+3. Install Puppeteer's managed Chrome if Chrome is not already available:
+
+```bash
+cd server
+npx puppeteer browsers install chrome
+```
+
+4. Set `PUPPETEER_EXECUTABLE_PATH` if you need to force a specific Chrome or Chromium binary. When it is blank, the backend tries common local Chrome paths before using Puppeteer's default lookup.
+5. Start the backend and scan the QR code printed in the Render/local logs with the WhatsApp mobile app.
+6. Add member mobile numbers in international format. India numbers may use `91XXXXXXXXXX`.
 
 Do not commit the WhatsApp session folder. Do not expose QR codes or session files.
 
@@ -106,6 +114,7 @@ TELEGRAM_ENABLED=false
 TELEGRAM_BOT_TOKEN=
 WHATSAPP_ENABLED=false
 WHATSAPP_SESSION_PATH=.wwebjs_auth
+PUPPETEER_EXECUTABLE_PATH=
 TWILIO_ENABLED=false
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=

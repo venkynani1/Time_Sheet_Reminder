@@ -1,4 +1,5 @@
 // Optional unofficial WhatsApp Web automation for consented reminder delivery.
+const fs = require('fs');
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 
@@ -13,6 +14,27 @@ function isEnabled() {
 
 function getSessionPath() {
   return process.env.WHATSAPP_SESSION_PATH || '.wwebjs_auth';
+}
+
+function getChromeCandidates() {
+  return [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    process.env.CHROME_PATH,
+    process.env.GOOGLE_CHROME_BIN,
+    process.env.ProgramFiles && `${process.env.ProgramFiles}\\Google\\Chrome\\Application\\chrome.exe`,
+    process.env['ProgramFiles(x86)'] && `${process.env['ProgramFiles(x86)']}\\Google\\Chrome\\Application\\chrome.exe`,
+    process.env.LOCALAPPDATA && `${process.env.LOCALAPPDATA}\\Google\\Chrome\\Application\\chrome.exe`,
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  ].filter(Boolean);
+}
+
+function resolveChromeExecutablePath() {
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
+  return getChromeCandidates().find((candidate) => fs.existsSync(candidate)) || null;
 }
 
 function buildReminderMessage(member, { confirmationLink, deadline }) {
@@ -36,9 +58,14 @@ function initialize() {
   if (!isEnabled()) return null;
   if (initializationPromise) return initializationPromise;
 
+  const executablePath = resolveChromeExecutablePath();
+  console.log(`WhatsApp initialization status: starting with session path ${getSessionPath()}.`);
+  console.log(`Chrome executable path: ${executablePath || 'not configured or auto-detected; using Puppeteer default lookup'}.`);
+
   client = new Client({
     authStrategy: new LocalAuth({ dataPath: getSessionPath() }),
     puppeteer: {
+      ...(executablePath ? { executablePath } : {}),
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     },
   });
@@ -51,6 +78,7 @@ function initialize() {
   client.on('ready', () => {
     connected = true;
     lastError = null;
+    console.log('WhatsApp initialization status: ready.');
     console.log('WhatsApp client is connected.');
   });
 
@@ -78,7 +106,7 @@ function initialize() {
     lastError = error.message || 'WhatsApp initialization failed.';
     client = null;
     initializationPromise = null;
-    console.error(`WhatsApp initialization failed: ${lastError}`);
+    console.error(`WhatsApp initialization status: failed - ${lastError}`);
   });
 
   return initializationPromise;
